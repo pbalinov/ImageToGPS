@@ -14,6 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
     
+    /*
     func applicationWillBecomeActive(_ notification: Notification) {
         if #available(macOS 13, *) {
             // Run on macOS 13
@@ -24,7 +25,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             (notification.object as? NSApplication)?.windows.first?.makeKeyAndOrderFront(self)
         }
     }
-
+    */
 }
 
 @main

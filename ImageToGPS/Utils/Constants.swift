@@ -15,7 +15,7 @@ struct Constants {
         static let webSite = URL(string: "https://github.com/pbalinov/ImageToGPS/")!
 
         // User Guide
-        static let userGuide = URL(string: "https://github.com/pbalinov/ImageToGPS/?")!
+        static let userGuide = URL(string: "https://github.com/pbalinov/ImageToGPS/wiki/How-It-Works/")!
 
         // JSON File with the latest app version
         static let appVersion = URL(string: "https://api.npoint.io/bfd6c134f6ae0d2f2d7b")!

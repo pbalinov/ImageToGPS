@@ -1,0 +1,22 @@
+# Delete app default and start fresh
+
+defaults delete com.pbalinov.ImageToGPS
+
+# Create DMG package
+
+Source:
+https://github.com/create-dmg/create-dmg
+
+Create "source_folder" and drag the .app file there.
+Open terminal and run command bellow.
+
+create-dmg \
+  --volname "ImageToGPS Installer" \
+  --window-pos 200 120 \
+  --window-size 800 400 \
+  --icon-size 100 \
+  --icon "ImageToGPS.app" 200 190 \
+  --hide-extension "ImageToGPS.app" \
+  --app-drop-link 600 185 \
+  "ImageToGPS-Installer.dmg" \
+  "source_folder/"
