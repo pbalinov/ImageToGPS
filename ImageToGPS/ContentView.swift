@@ -105,49 +105,63 @@ struct ContentView: View {
     }
 
     private func loadPhotos(from urls: [URL]) {
-        Task {
-            let items = await Task.detached(priority: .userInitiated) {
-                var loadedItems: [PhotoItem] = []
-
+        Task(priority: .utility) {
+            let items = await withTaskGroup(of: PhotoItem?.self) { group in
                 for url in urls {
-                    let isAccessing = url.startAccessingSecurityScopedResource()
-                    defer {
-                        if isAccessing {
-                            url.stopAccessingSecurityScopedResource()
-                        }
+                    group.addTask {
+                        Self.processPhoto(at: url)
                     }
-
-                    guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else {
-                        continue
-                    }
-
-                    // Generate thumbnail
-                    let thumbnailOptions: [CFString: Any] = [
-                        kCGImageSourceCreateThumbnailWithTransform: true,
-                        kCGImageSourceCreateThumbnailFromImageAlways: true,
-                        kCGImageSourceThumbnailMaxPixelSize: 250
-                    ]
-                    var thumbnailImage: Image?
-                    if let cgImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, thumbnailOptions as CFDictionary) {
-                        thumbnailImage = Image(decorative: cgImage, scale: 1.0)
-                    }
-
-                    // Extract GPS coordinates
-                    let coordinatesString = Self.extractGPSCoordinates(from: imageSource)
-
-                    let photoItem = PhotoItem(
-                        imgThumbnail: thumbnailImage,
-                        fileName: url.lastPathComponent,
-                        gpsCoordinates: coordinatesString
-                    )
-                    loadedItems.append(photoItem)
                 }
-
+                
+                var loadedItems: [PhotoItem] = []
+                for await item in group {
+                    if let item = item {
+                        loadedItems.append(item)
+                    }
+                }
                 return loadedItems
-            }.value
+            }
 
             self.listOfPhotos = items
         }
+    }
+
+    nonisolated private static func processPhoto(at url: URL) -> PhotoItem? {
+        let isAccessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if isAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        // Force immediate decoding to avoid lazy decoding locks later
+        let sourceOptions: [CFString: Any] = [
+            kCGImageSourceShouldCache: false
+        ]
+        
+        guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, sourceOptions as CFDictionary) else {
+            return nil
+        }
+
+        let thumbnailOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: 250,
+            kCGImageSourceShouldCacheImmediately: true // Decodes synchronously on this task
+        ]
+        
+        var thumbnailImage: Image?
+        if let cgImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, thumbnailOptions as CFDictionary) {
+            thumbnailImage = Image(decorative: cgImage, scale: 1.0)
+        }
+
+        let coordinatesString = extractGPSCoordinates(from: imageSource)
+
+        return PhotoItem(
+            imgThumbnail: thumbnailImage,
+            fileName: url.lastPathComponent,
+            gpsCoordinates: coordinatesString
+        )
     }
 
     nonisolated private static func extractGPSCoordinates(from source: CGImageSource) -> String {

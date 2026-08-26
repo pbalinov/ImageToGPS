@@ -69,19 +69,19 @@ struct ImageToGPSApp: App {
                     Text("help-web-page")
                 }
             }
+            /*
             CommandGroup(after: .systemServices) {
                 Button(action: {
-                    /*
                      // Check for update
                      Task {
                      await appUpdateModel.loadVersionDataAndCheckForUpdate()
                      }
                      settingsModel.setLastUpdateCheckDate(Date.now)
-                     */
                 }) {
                     Text("menu-updates")
                 }
             }
+            */
         }
     }
 }
