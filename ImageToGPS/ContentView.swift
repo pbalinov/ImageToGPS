@@ -8,17 +8,20 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import ImageIO
+import PhotosUI
 
 struct PhotoItem: Identifiable, Sendable {
     let id = UUID()
     var imgThumbnail: Image?
     var fileName: String
     var gpsCoordinates: String
+    var hasValidGPS: Bool = false
 }
 
 struct ContentView: View {
     @State private var listOfPhotos: [PhotoItem] = []
     @State private var isImporterPresented: Bool = false
+    @State private var selectedLibraryItems: [PhotosPickerItem] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Table.spacing) {
@@ -55,33 +58,43 @@ struct ContentView: View {
                         Text(item.gpsCoordinates)
                             .textSelection(.enabled)
 
-                        //Spacer()
-
-                        Button {
-                            copyToClipboard(item.gpsCoordinates)
-                        } label: {
-                            Image(systemName: "doc.on.doc")
+                        if item.hasValidGPS {
+                            Button {
+                                copyToClipboard(item.gpsCoordinates)
+                            } label: {
+                                Image(systemName: "doc.on.doc")
+                            }
+                            .buttonStyle(.borderless)
+                            .help(Text("copy-coordinates"))
                         }
-                        .buttonStyle(.borderless)
-                        .help(Text("copy-coordinates"))
                     }
-                    .contextMenu {
+                    .contextMenu(item.hasValidGPS ? ContextMenu {
                         Button {
                             copyToClipboard(item.gpsCoordinates)
                         } label: {
                             Label("copy-coordinates", systemImage: "doc.on.doc")
                         }
-                    }
+                    } : nil)
                 }
             }
 
             HStack {
                 Spacer()
                 
-                Button("button-load") {
+                Button("button-load-files") {
                     isImporterPresented = true
                 }
                 .buttonStyle(.borderedProminent)
+                
+                PhotosPicker(
+                    "button-load-library",
+                    selection: $selectedLibraryItems,
+                    matching: .images
+                )
+                .buttonStyle(.bordered)
+                .onChange(of: selectedLibraryItems) { _, items in
+                    loadPhotosFromLibrary(from: items)
+                }
             }
         }
         .padding()
@@ -92,7 +105,7 @@ struct ContentView: View {
         ) { result in
             switch result {
             case .success(let urls):
-                loadPhotos(from: urls)
+                loadPhotosFromFiles(from: urls)
             case .failure(let error):
                 print("Failed to select photos: \(error.localizedDescription)")
             }
@@ -104,7 +117,7 @@ struct ContentView: View {
         NSPasteboard.general.setString(text, forType: .string)    
     }
 
-    private func loadPhotos(from urls: [URL]) {
+    private func loadPhotosFromFiles(from urls: [URL]) {
         Task(priority: .utility) {
             let items = await withTaskGroup(of: PhotoItem?.self) { group in
                 for url in urls {
@@ -126,6 +139,34 @@ struct ContentView: View {
         }
     }
 
+    private func loadPhotosFromLibrary(from pickerItems: [PhotosPickerItem]) {
+        guard !pickerItems.isEmpty else { return }
+
+        Task(priority: .utility) {
+            let items = await withTaskGroup(of: PhotoItem?.self) { group in
+                for (index, item) in pickerItems.enumerated() {
+                    group.addTask {
+                        guard let data = try? await item.loadTransferable(type: Data.self) else {
+                            return nil
+                        }
+                        let name = item.itemIdentifier ?? "Photo \(index + 1)"
+                        return Self.processPhotoData(data, fileName: name)
+                    }
+                }
+
+                var loadedItems: [PhotoItem] = []
+                for await item in group {
+                    if let item = item {
+                        loadedItems.append(item)
+                    }
+                }
+                return loadedItems
+            }
+
+            self.listOfPhotos = items
+        }
+    }
+
     nonisolated private static func processPhoto(at url: URL) -> PhotoItem? {
         let isAccessing = url.startAccessingSecurityScopedResource()
         defer {
@@ -134,7 +175,6 @@ struct ContentView: View {
             }
         }
 
-        // Force immediate decoding to avoid lazy decoding locks later
         let sourceOptions: [CFString: Any] = [
             kCGImageSourceShouldCache: false
         ]
@@ -143,11 +183,27 @@ struct ContentView: View {
             return nil
         }
 
+        return makePhotoItem(from: imageSource, fileName: url.lastPathComponent)
+    }
+
+    nonisolated private static func processPhotoData(_ data: Data, fileName: String) -> PhotoItem? {
+        let sourceOptions: [CFString: Any] = [
+            kCGImageSourceShouldCache: false
+        ]
+
+        guard let imageSource = CGImageSourceCreateWithData(data as CFData, sourceOptions as CFDictionary) else {
+            return nil
+        }
+
+        return makePhotoItem(from: imageSource, fileName: fileName)
+    }
+
+    nonisolated private static func makePhotoItem(from imageSource: CGImageSource, fileName: String) -> PhotoItem {
         let thumbnailOptions: [CFString: Any] = [
             kCGImageSourceCreateThumbnailWithTransform: true,
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceThumbnailMaxPixelSize: 250,
-            kCGImageSourceShouldCacheImmediately: true // Decodes synchronously on this task
+            kCGImageSourceShouldCacheImmediately: true
         ]
         
         var thumbnailImage: Image?
@@ -155,20 +211,21 @@ struct ContentView: View {
             thumbnailImage = Image(decorative: cgImage, scale: 1.0)
         }
 
-        let coordinatesString = extractGPSCoordinates(from: imageSource)
+        let (coordinatesString, hasValidGPS) = extractGPSCoordinates(from: imageSource)
 
         return PhotoItem(
             imgThumbnail: thumbnailImage,
-            fileName: url.lastPathComponent,
-            gpsCoordinates: coordinatesString
+            fileName: fileName,
+            gpsCoordinates: coordinatesString,
+            hasValidGPS: hasValidGPS
         )
     }
 
-    nonisolated private static func extractGPSCoordinates(from source: CGImageSource) -> String {
+    nonisolated private static func extractGPSCoordinates(from source: CGImageSource) -> (coordinates: String, isValid: Bool) {
         guard let metadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
               let gpsData = metadata[kCGImagePropertyGPSDictionary] as? [CFString: Any]
         else {
-            return NSLocalizedString("gps-no-data", comment: "")
+            return (NSLocalizedString("gps-no-data", comment: ""), false)
         }
 
         guard let latitude = gpsData[kCGImagePropertyGPSLatitude] as? Double,
@@ -176,10 +233,10 @@ struct ContentView: View {
               let longitude = gpsData[kCGImagePropertyGPSLongitude] as? Double,
               let lonRef = gpsData[kCGImagePropertyGPSLongitudeRef] as? String
         else {
-            return NSLocalizedString("gps-incomplete-data", comment: "")
+            return (NSLocalizedString("gps-incomplete-data", comment: ""), false)
         }
 
-        return String(format: "%.5f° %@, %.5f° %@", latitude, latRef, longitude, lonRef)
+        return (String(format: "%.5f° %@, %.5f° %@", latitude, latRef, longitude, lonRef), true)
     }
 }
 
