@@ -18,22 +18,8 @@ A lightweight, native macOS utility built with SwiftUI that extracts and display
 
 ---
 
-## Requirements
+The latest version of the application is available on the [Releases](https://github.com/pbalinov/ImageToGPS/releases) page.
 
-- macOS 13.0 or later *(or iOS/iPadOS 16.0+)*
-- Xcode 15.0 or later
-- Swift 5.9+
-
----
-
-QuitRunningApps is a macOS application built with SwiftUI. It automates the process of closing multiple running applications on your Mac with a single click.
-
-QuitRunningApps follows SwiftUI principles and Apple’s recommended best practices.
-
-The latest version of the application is available on the [Releases](https://github.com/pbalinov/QuitRunningApps/releases) page.
-
-User and installation guides can be found in the [Wiki](https://github.com/pbalinov/QuitRunningApps/wiki).
-
-You can contact me at quitrunningapps@gmail.com.
+User and installation guides can be found in the [Wiki](https://github.com/pbalinov/ImageToGPS/wiki).
 
 Created by Plamen Balinov.
