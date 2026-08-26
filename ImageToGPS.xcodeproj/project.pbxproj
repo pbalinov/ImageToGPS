@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1BC91A56303EFA6C0050A089 /* Map Icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 1BC91A55303EFA6C0050A089 /* Map Icon.svg */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		1BC91A43303EF6470050A089 /* ImageToGPS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ImageToGPS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1BC91A55303EFA6C0050A089 /* Map Icon.svg */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Map Icon.svg"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +37,7 @@
 		1BC91A3A303EF6470050A089 = {
 			isa = PBXGroup;
 			children = (
+				1BC91A54303EFA490050A089 /* External Resources */,
 				1BC91A45303EF6470050A089 /* ImageToGPS */,
 				1BC91A44303EF6470050A089 /* Products */,
 			);
@@ -43,6 +49,14 @@
 				1BC91A43303EF6470050A089 /* ImageToGPS.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		1BC91A54303EFA490050A089 /* External Resources */ = {
+			isa = PBXGroup;
+			children = (
+				1BC91A55303EFA6C0050A089 /* Map Icon.svg */,
+			);
+			path = "External Resources";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -109,6 +123,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1BC91A56303EFA6C0050A089 /* Map Icon.svg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
