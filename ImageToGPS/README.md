@@ -1,12 +1,15 @@
 # ImageToGPS
 
-A lightweight and fast macOS application built with SwiftUI to inspect EXIF metadata, extract GPS coordinates, and preview image thumbnails from local files and the Photo Library.
+A lightweight and fast macOS application built with SwiftUI to inspect EXIF metadata, extract GPS coordinates, and preview image thumbnails from local files and the Photos library.
 
 ## Features
 
 - **Fast EXIF GPS Extraction**: Reads latitude and longitude coordinates directly from image metadata using `ImageIO`.
+- **Photo Library & File Importer Integration**:
+  - Load photos directly from your system Photos library with the native `PhotosPicker`.
+  - Batch select local files and folders via the native file importer dialog.
 - **Thumbnail Generation**: Efficiently generates embedded thumbnails on background tasks using `CGImageSourceCreateThumbnailAtIndex` without loading full-resolution images into memory.
-- **Batch Selection**: Select multiple images at once using the native file importer or the Photos picker.
+- **Batch Processing**: Select and process multiple images concurrently in parallel.
 - **Copy Coordinates**:
   - Selectable text with standard copy-paste (⌘ + C).
   - One-click copy button per row.
@@ -16,13 +19,14 @@ A lightweight and fast macOS application built with SwiftUI to inspect EXIF meta
 
 ## Requirements
 
-- macOS 14.0+ (or targeted deployment version)
+- macOS 14.0+
 - Xcode 15.0+
 - Swift 5.9+
 
 ## Tech Stack & Frameworks
 
-- **SwiftUI**: Modern, declarative UI with `Table` and `PhotosPicker`.
-- **ImageIO**: Low-level, memory-efficient image property and thumbnail extraction.
-- **Swift Concurrency**: Structured concurrency (`TaskGroup`) for parallel processing.
-- **UniformTypeIdentifiers**: Type-safe file type handling.
+- **SwiftUI**: Modern, declarative UI with multi-column `Table` view.
+- **PhotosUI**: Native system `PhotosPicker` for accessing the Photos library.
+- **ImageIO**: Low-level, memory-efficient image property inspection and thumbnail extraction.
+- **Swift Concurrency**: Structured concurrency (`TaskGroup`) for parallel photo processing.
+- **UniformTypeIdentifiers**: Type-safe file content type filtering.
