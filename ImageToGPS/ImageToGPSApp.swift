@@ -13,19 +13,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Close the application after last (only) window is closed
         return true
     }
-    
-    /*
-    func applicationWillBecomeActive(_ notification: Notification) {
-        if #available(macOS 13, *) {
-            // Run on macOS 13
-            // Fixed in Xcode 14, macOS 13
-        } else {
-            // Run on macOS 12 and lower code.
-            // Workaround for the window minimize and restore issue
-            (notification.object as? NSApplication)?.windows.first?.makeKeyAndOrderFront(self)
-        }
-    }
-    */
 }
 
 @main
