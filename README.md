@@ -1,6 +1,6 @@
 # ImageToGPS
 
-A lightweight, native macOS utility built with SwiftUI that extracts and displays GPS metadata (EXIF) and thumbnails from your photo files in a clean, interactive table.
+A lightweight and fast macOS application built with SwiftUI to inspect EXIF metadata, extract GPS coordinates, and preview image thumbnails from local files and the Photos library.
 
 ---
 
