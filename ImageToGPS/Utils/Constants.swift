@@ -26,40 +26,22 @@ struct Constants {
     
     struct MainWindow {
         // Application window dimensions
-        static let width = CGFloat(400)
+        static let width = CGFloat(600)
         static let height = CGFloat(400)
-        static let padding = CGFloat(8)
     }
-    
-    struct SettingsWindow {
-        // Settings window dimensions
-        static let width = CGFloat(360)
-        static let height = CGFloat(360)
-        static let padding = CGFloat(4)
-        static let paddingHStack = CGFloat(2)
-    }
-    
-    struct List {
-        // List view modifiers
-        static let borderColor = Color(NSColor.separatorColor)
-        static let borderWidth = CGFloat(1)
-    }
-    
+        
     struct Update {
         // Period between update checks in days
         static let periodBetweenChecks = 7
     }
     
-    struct Divider {
-        // Divider modifiers
-        static let width = CGFloat(200)
-        static let height = CGFloat(16)
+    struct Table {
+        // Table properties
+        static let spacing = CGFloat(16)
+        static let thumbColumnWidth = CGFloat(150)
+        static let thumbCornerRadius = CGFloat(6)
+        static let thumbWidth = CGFloat(125)
+        static let thumbHeight = CGFloat(125)
     }
-    
-    struct File {
-        // File chooser
-        static let none = "<None>"
-    }
-    
 }
 
