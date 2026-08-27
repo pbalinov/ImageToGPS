@@ -10,14 +10,11 @@ A lightweight and fast macOS application built with SwiftUI to inspect EXIF meta
 - **Photo Library & File Importer Integration**:
   - Load photos directly from your system Photos library with the native `PhotosPicker`.
   - Batch select local files and folders via the native file importer dialog.
-- **Thumbnail Generation**: Efficiently generates embedded thumbnails on background tasks using `CGImageSourceCreateThumbnailAtIndex` without loading full-resolution images into memory.
 - **Batch Processing**: Select and process multiple images concurrently in parallel.
 - **Copy Coordinates**:
   - Selectable text with standard copy-paste (⌘ + C).
   - One-click copy button per row.
   - Context menu (right-click) support.
-- **Fully Asynchronous & Responsive**: Uses Swift Concurrency (`Task` and `withTaskGroup` with utility QoS) to keep the UI fluid during image processing.
-- **Localization-ready**: String identifiers configured for easy localization.
 
 ---
 
