@@ -119,20 +119,27 @@ struct ContentView: View {
 
     private func loadPhotosFromFiles(from urls: [URL]) {
         Task(priority: .utility) {
-            let items = await withTaskGroup(of: PhotoItem?.self) { group in
-                for url in urls {
+            let items = await withTaskGroup(of: (index: Int, item: PhotoItem)?.self) { group in
+                for (index, url) in urls.enumerated() {
                     group.addTask {
-                        Self.processPhoto(at: url)
+                        guard let item = Self.processPhoto(at: url) else {
+                            return nil
+                        }
+
+                        return (index, item)
                     }
                 }
                 
-                var loadedItems: [PhotoItem] = []
-                for await item in group {
-                    if let item = item {
-                        loadedItems.append(item)
+                var loadedItems: [(index: Int, item: PhotoItem)] = []
+                for await result in group {
+                    if let result {
+                        loadedItems.append(result)
                     }
                 }
+
                 return loadedItems
+                    .sorted { $0.index < $1.index }
+                    .map(\.item)
             }
 
             self.listOfPhotos = items
@@ -143,27 +150,36 @@ struct ContentView: View {
         guard !pickerItems.isEmpty else { return }
 
         Task(priority: .utility) {
-            let items = await withTaskGroup(of: PhotoItem?.self) { group in
+            let items = await withTaskGroup(of: (index: Int, item: PhotoItem)?.self) { group in
                 for (index, item) in pickerItems.enumerated() {
                     group.addTask {
                         guard let data = try? await item.loadTransferable(type: Data.self) else {
                             return nil
                         }
+
                         let name = item.itemIdentifier ?? "Photo \(index + 1)"
-                        return Self.processPhotoData(data, fileName: name)
+                        guard let photoItem = Self.processPhotoData(data, fileName: name) else {
+                            return nil
+                        }
+
+                        return (index, photoItem)
                     }
                 }
 
-                var loadedItems: [PhotoItem] = []
-                for await item in group {
-                    if let item = item {
-                        loadedItems.append(item)
+                var loadedItems: [(index: Int, item: PhotoItem)] = []
+                for await result in group {
+                    if let result {
+                        loadedItems.append(result)
                     }
                 }
+
                 return loadedItems
+                    .sorted { $0.index < $1.index }
+                    .map(\.item)
             }
 
             self.listOfPhotos = items
+            self.selectedLibraryItems = []
         }
     }
 
@@ -236,7 +252,19 @@ struct ContentView: View {
             return (NSLocalizedString("gps-incomplete-data", comment: ""), false)
         }
 
-        return (String(format: "%.5f° %@, %.5f° %@", latitude, latRef, longitude, lonRef), true)
+        let signedLatitude = signedCoordinate(latitude, reference: latRef)
+        let signedLongitude = signedCoordinate(longitude, reference: lonRef)
+
+        return (String(format: "%.5f, %.5f", signedLatitude, signedLongitude), true)
+    }
+
+    nonisolated private static func signedCoordinate(_ value: Double, reference: String) -> Double {
+        switch reference.uppercased() {
+        case "S", "W":
+            return -abs(value)
+        default:
+            return abs(value)
+        }
     }
 }
 
