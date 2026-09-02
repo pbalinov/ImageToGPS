@@ -22,6 +22,8 @@ struct ContentView: View {
     @State private var listOfPhotos: [PhotoItem] = []
     @State private var isImporterPresented: Bool = false
     @State private var selectedLibraryItems: [PhotosPickerItem] = []
+    @State private var loadStatusMessage: String = ""
+    @State private var isLoadStatusError: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Table.spacing) {
@@ -79,6 +81,15 @@ struct ContentView: View {
             }
 
             HStack {
+                if !loadStatusMessage.isEmpty {
+                    Text(loadStatusMessage)
+                        .font(.caption)
+                        .foregroundStyle(isLoadStatusError ? .red : .secondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: 240, alignment: .trailing)
+                }
+                
                 Spacer()
                 
                 Button("button-load-files") {
@@ -107,7 +118,11 @@ struct ContentView: View {
             case .success(let urls):
                 loadPhotosFromFiles(from: urls)
             case .failure(let error):
-                print("Failed to select photos: \(error.localizedDescription)")
+                isLoadStatusError = true
+                loadStatusMessage = String(
+                    format: NSLocalizedString("load-selection-error", comment: ""),
+                    error.localizedDescription
+                )
             }
         }
     }
@@ -118,68 +133,98 @@ struct ContentView: View {
     }
 
     private func loadPhotosFromFiles(from urls: [URL]) {
+        showLoadingStatus()
+
         Task(priority: .utility) {
-            let items = await withTaskGroup(of: (index: Int, item: PhotoItem)?.self) { group in
+            let result = await withTaskGroup(of: (index: Int, item: PhotoItem?).self) { group in
                 for (index, url) in urls.enumerated() {
                     group.addTask {
-                        guard let item = Self.processPhoto(at: url) else {
-                            return nil
-                        }
-
-                        return (index, item)
+                        (index, Self.processPhoto(at: url))
                     }
                 }
                 
                 var loadedItems: [(index: Int, item: PhotoItem)] = []
+                var failedCount = 0
                 for await result in group {
-                    if let result {
-                        loadedItems.append(result)
+                    if let item = result.item {
+                        loadedItems.append((result.index, item))
+                    } else {
+                        failedCount += 1
                     }
                 }
 
-                return loadedItems
+                let items = loadedItems
                     .sorted { $0.index < $1.index }
                     .map(\.item)
+
+                return (items: items, failedCount: failedCount)
             }
 
-            self.listOfPhotos = items
+            self.listOfPhotos = result.items
+            self.showCompletionStatus(loadedCount: result.items.count, failedCount: result.failedCount)
         }
     }
 
     private func loadPhotosFromLibrary(from pickerItems: [PhotosPickerItem]) {
         guard !pickerItems.isEmpty else { return }
 
+        showLoadingStatus()
+
         Task(priority: .utility) {
-            let items = await withTaskGroup(of: (index: Int, item: PhotoItem)?.self) { group in
+            let result = await withTaskGroup(of: (index: Int, item: PhotoItem?).self) { group in
                 for (index, item) in pickerItems.enumerated() {
                     group.addTask {
                         guard let data = try? await item.loadTransferable(type: Data.self) else {
-                            return nil
+                            return (index, nil)
                         }
 
                         let name = item.itemIdentifier ?? "Photo \(index + 1)"
-                        guard let photoItem = Self.processPhotoData(data, fileName: name) else {
-                            return nil
-                        }
-
-                        return (index, photoItem)
+                        return (index, Self.processPhotoData(data, fileName: name))
                     }
                 }
 
                 var loadedItems: [(index: Int, item: PhotoItem)] = []
+                var failedCount = 0
                 for await result in group {
-                    if let result {
-                        loadedItems.append(result)
+                    if let item = result.item {
+                        loadedItems.append((result.index, item))
+                    } else {
+                        failedCount += 1
                     }
                 }
 
-                return loadedItems
+                let items = loadedItems
                     .sorted { $0.index < $1.index }
                     .map(\.item)
+
+                return (items: items, failedCount: failedCount)
             }
 
-            self.listOfPhotos = items
+            self.listOfPhotos = result.items
+            self.showCompletionStatus(loadedCount: result.items.count, failedCount: result.failedCount)
             self.selectedLibraryItems = []
+        }
+    }
+
+    private func showLoadingStatus() {
+        isLoadStatusError = false
+        loadStatusMessage = NSLocalizedString("load-loading", comment: "")
+    }
+
+    private func showCompletionStatus(loadedCount: Int, failedCount: Int) {
+        isLoadStatusError = failedCount > 0
+
+        if failedCount > 0 {
+            loadStatusMessage = String(
+                format: NSLocalizedString("load-partial-count", comment: ""),
+                loadedCount,
+                failedCount
+            )
+        } else {
+            loadStatusMessage = String(
+                format: NSLocalizedString("load-loaded-count", comment: ""),
+                loadedCount
+            )
         }
     }
 
